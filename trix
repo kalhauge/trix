@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+function print_usage () {
+    cat <<-EOF
+trix [--eval <expr> | --expand <expr>]
+
+# Commands
+-e --eval:    evaluate an expression
+-x --expand:  expand a query
+
+# Utils
+-h --help: to display this help message
+EOF
+}
+
+function nix_exec () {
+    nix-instantiate --eval "$@"
+}
+
+function trix_expand () {
+    list="$(dots_to_aterm_list $1)"
+    result=$(nix_exec trix-expand.nix --arg path "$list")
+    from_aterm_list "$result"
+}
+
+function trix_eval () {
+    list="$(dots_to_aterm_list $1)"
+    nix_exec trix-eval.nix --arg path "$list"
+}
+
+function dots_to_aterm_list () {
+    IFS='.' read -ra ITEMS <<< "$1"
+    echo -n "[ "
+    for i in "${ITEMS[@]}"; do
+        echo -n "\"$i\" "
+    done
+    echo -n "]"
+}
+
+# Can't use if including spaces
+function from_aterm_list () {
+    if [[ "$1" != "[ ]" ]]; then
+        values=${1:2:-2}
+        echo ${values//\"/}
+    fi
+}
+
+## parser
+while [[ $# > 0 ]]; do
+    key=$1
+    shift
+    case $key in
+        -h|--help)
+            print_usage
+            exit
+        ;;
+        -x|--expand)
+            EXPAND="$1"
+            shift
+        ;;
+        -e|--eval)
+            EVAL="$1"
+            shift
+        ;;
+    esac
+done
+
+if [[ $EXPAND ]]; then
+    trix_expand $EXPAND
+elif [[ $EVAL ]]; then 
+    trix_eval $EVAL
+fi
