@@ -12,8 +12,12 @@ trix [--eval <expr> | --expand <expr>]
 EOF
 }
 
+LOCALDIR=$(dirname $0)
+
 function nix_exec () {
-    nix-instantiate --eval "$@"
+    file=$1
+    shift
+    nix-instantiate --eval "$LOCALDIR/$file" "$@"
 }
 
 function trix_expand () {
