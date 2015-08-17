@@ -19,14 +19,20 @@ function nix_exec () {
 function trix_expand () {
     list="$(dots_to_aterm_list $1)"
     result=$(nix_exec trix-expand.nix --arg path "$list" 2> /dev/null)
-    if [[ "$?" == "0" ]]; then
+    succ=$?
+    if [[ "$succ" == "0" ]]; then
+        if [[ $1 ]]; then pre="$1."; else pre=""; fi
         for i in $(from_aterm_list "$result"); do 
-            echo "$1.$i"
+            echo "$pre$i"
         done
     else
         end="${1##*.}"
         front="${1%.*}"
-        trix_expand $front | grep -e "$end"
+        if [[ "$front" != "$end" ]]; then
+            trix_expand $front | grep -e "$end"
+        else
+            trix_expand | grep -e "$end"
+        fi
     fi
 }
 
@@ -62,18 +68,19 @@ while [[ $# > 0 ]]; do
             exit
         ;;
         -x|--expand)
+            CMD="expand"
             EXPAND="$1"
             shift
         ;;
         -e|--eval)
+            CMD="eval"
             EVAL="$1"
             shift
         ;;
     esac
 done
 
-if [[ $EXPAND ]]; then
-    trix_expand $EXPAND
-elif [[ $EVAL ]]; then 
-    trix_eval $EVAL
-fi
+case $CMD in 
+    expand) trix_expand $EXPAND ;;
+    eval) trix_eval $EVAL ;;
+esac
