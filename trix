@@ -18,8 +18,16 @@ function nix_exec () {
 
 function trix_expand () {
     list="$(dots_to_aterm_list $1)"
-    result=$(nix_exec trix-expand.nix --arg path "$list")
-    from_aterm_list "$result"
+    result=$(nix_exec trix-expand.nix --arg path "$list" 2> /dev/null)
+    if [[ "$?" == "0" ]]; then
+        for i in $(from_aterm_list "$result"); do 
+            echo "$1.$i"
+        done
+    else
+        end="${1##*.}"
+        front="${1%.*}"
+        trix_expand $front | grep -e "$end"
+    fi
 }
 
 function trix_eval () {
